@@ -61,9 +61,6 @@ class TypeConversionDict(dict[_K, _V]):
                      :class:`MultiDict`.  If a :exc:`ValueError` or a
                      :exc:`TypeError` is raised by this callable the default
                      value is returned.
-
-        .. versionchanged:: 3.0.2
-           Returns the default value on :exc:`TypeError`, too.
         """
         try:
             rv = self[key]
