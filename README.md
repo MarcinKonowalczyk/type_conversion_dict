@@ -17,7 +17,7 @@ cp ./src/type_conversion_dict/type_conversion_dict.py <wherever-your-heart-deisr
 Or even better, without checking out the repository:
 
 ```bash
-curl https://raw.githubusercontent.com/MarcinKonowalczyk/type_conversion_dict/main/src/type_conversion_dict/type_conversion_dict.py > <wherever-your-heart-deisres>
+curl -O https://raw.githubusercontent.com/MarcinKonowalczyk/type_conversion_dict/main/src/type_conversion_dict/type_conversion_dict.py
 ```
 
 Or build and install the package.
