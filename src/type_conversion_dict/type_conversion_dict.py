@@ -8,16 +8,17 @@ Written by Marcin Konowalczyk.
 from typing import TYPE_CHECKING, Callable, Literal, TypeVar, Union, overload
 
 if TYPE_CHECKING:
+    # import like this not to acquire a dependency on typing_extensions
     from typing_extensions import override
 else:
     override = lambda f: f
 
-_K = TypeVar("_K")
-_V = TypeVar("_V")
-_D = TypeVar("_D")
-_T = TypeVar("_T")
+_K = TypeVar("_K")  # key
+_V = TypeVar("_V")  # value
+_D = TypeVar("_D")  # default
+_T = TypeVar("_T")  # converted type
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = ["TypeConversionDict"]
 
@@ -35,7 +36,7 @@ class TypeConversionDict(dict[_K, _V]):
     @overload
     def get(self, key: _K) -> Union[_V, None]: ...
     @overload
-    def get(self, key: _K, *, required: Literal[False]) -> _V: ...
+    def get(self, key: _K, *, required: Literal[False]) -> Union[_V, None]: ...
 
     # Normal get with default
     # If the key is not found, the default is returned
@@ -43,7 +44,7 @@ class TypeConversionDict(dict[_K, _V]):
     @overload
     def get(self, key: _K, default: _D) -> Union[_D, _V]: ...
     @overload
-    def get(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V, None]: ...
+    def get(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V]: ...
 
     # Get with type. No default therefore default is None
 
@@ -109,6 +110,7 @@ class TypeConversionDict(dict[_K, _V]):
                      :exc:`TypeError` is raised by this callable the default
                      value is returned.
         """
+        __tracebackhide__ = True
         try:
             rv = self[key]
         except KeyError:
@@ -122,7 +124,7 @@ class TypeConversionDict(dict[_K, _V]):
 
         if type is not _missing:
             try:
-                rv = type(rv)
+                rv = type(rv)  # pyright: ignore[reportCallIssue]
             except ValueError:
                 if required is _missing or not required:
                     # Type conversion failed. Return default
@@ -134,23 +136,65 @@ class TypeConversionDict(dict[_K, _V]):
 
         return rv
 
+    # Normal pop
+    # If the key is not found, None is returned
+
     @overload
     def pop(self, key: _K) -> _V: ...
+    @overload
+    def pop(self, key: _K, *, required: Literal[True]) -> _V: ...
+
+    # Normal pop with default
+    # If the key is not found, the default is returned
 
     @overload
-    def pop(self, key: _K, default: _V) -> _V: ...
+    def pop(self, key: _K, default: _D) -> Union[_D, _V]: ...
+    @overload
+    def pop(self, key: _K, default: _D, *, required: Literal[True]) -> Union[_D, _V]: ...
+
+    # Get with type. No default therefore default is None
 
     @overload
-    def pop(self, key: _K, default: _D) -> Union[_V, _D]: ...
+    def pop(self, key: _K, *, type: Callable[[_V], _T]) -> _T: ...
+    @overload
+    def pop(self, key: _K, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
+
+    # Get with default and type. Default is returned if key is not found.
+    # The default is *not* run through the type conversion
+    # If the type conversion fails, the default is returned
+    # This is the same behaviour as werzeug's TypeConversionDict
 
     @overload
-    def pop(self, key: _K, default: _D, type: Callable[[_V], _T]) -> Union[_D, _T]: ...
+    def pop(self, key: _K, default: object, *, type: Callable[[_V], _T]) -> _T: ...
+    @overload
+    def pop(self, key: _K, default: object, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
+
+    # Get with required. Default is ignored and the key is required. Equivalent to [] access
 
     @overload
-    def pop(self, key: _K, type: Callable[[_V], _T]) -> Union[_T, None]: ...
+    def pop(self, key: _K, *, required: Literal[False]) -> Union[_V, None]: ...
+    @overload
+    def pop(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V]: ...
 
-    @override  # type: ignore[misc]
-    def pop(self, key, default=_missing, type=None):  # type: ignore[no-untyped-def]
+    # Get with type and required.
+    # Default is ignored and the key is required.
+    # Type conversion must succeed or a ValueError is raised.
+    # Equivalent to [] access but with type conversion.
+
+    @overload
+    def pop(self, key: _K, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_T, None]: ...
+    @overload
+    def pop(self, key: _K, default: _D, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_D, _T]: ...
+
+    @override
+    def pop(  # type: ignore[no-untyped-def]
+        self,
+        key,
+        default=_missing,  # Default to None
+        *,
+        type=_missing,  # Default to no type conversion
+        required=_missing,  # Default to **True**
+    ):
         """Like :meth:`get` but removes the key/value pair.
 
         >>> d = TypeConversionDict(foo='42', bar='blub')
@@ -177,19 +221,26 @@ class TypeConversionDict(dict[_K, _V]):
            dictionary.
 
         """
+        __tracebackhide__ = True
         try:
             rv = self[key]
         except KeyError:
-            if default is _missing:
+            if required is _missing or required:
+                # required is True. Raise KeyError
                 raise
+            if default is _missing:
+                return None
             return default
-        if type is not None:
+        if type is not _missing:
             try:
-                rv = type(rv)
+                rv = type(rv)  # pyright: ignore[reportCallIssue]
             except ValueError:
-                if default is _missing:
-                    return None
-                return default
+                if required is _missing or required:
+                    raise
+                else:
+                    if default is _missing:
+                        return None
+                    return default
         try:
             # This method is not meant to be thread-safe, but at least lets not
             # fall over if the dict was mutated between the get and the delete. -MK
