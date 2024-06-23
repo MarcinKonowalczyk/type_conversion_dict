@@ -1,13 +1,11 @@
 """
 Single-file module with type conversion dict.
-Inspired by werzeug.datastructures.TypeConversionDict.
 
+Inspired by werzeug.datastructures.TypeConversionDict.
 Written by Marcin Konowalczyk.
 """
 
-_missing = object()
-
-from typing import Callable, TypeVar, overload, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Callable, TypeVar, Union, overload
 
 if TYPE_CHECKING:
     from typing_extensions import override
@@ -22,6 +20,8 @@ _T = TypeVar("_T")
 __version__ = "0.1.0"
 
 __all__ = ["TypeConversionDict"]
+
+_missing = object()
 
 
 class TypeConversionDict(dict[_K, _V]):
