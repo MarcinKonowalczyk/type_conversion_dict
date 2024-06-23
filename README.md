@@ -12,6 +12,12 @@ Just copy the sintle-module file to your project and import it.
 cp ./src/type_conversion_dict/type_conversion_dict.py <wherever-your-heart-deisres>
 ```
 
+Or even better, without checking out the repository:
+
+```bash
+curl https://raw.githubusercontent.com/MarcinKonowalczyk/type_conversion_dict/main/src/type_conversion_dict/type_conversion_dict.py > <wherever-your-heart-deisres>
+```
+
 Or build and install the package.
 
 ```bash
