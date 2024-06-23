@@ -1,5 +1,5 @@
 """
-Single-file module with type conversion dict.
+Single-file module with type-conversion dict.
 
 Inspired by werzeug.datastructures.TypeConversionDict.
 Written by Marcin Konowalczyk.
