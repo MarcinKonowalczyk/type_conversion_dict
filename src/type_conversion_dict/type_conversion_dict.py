@@ -109,6 +109,8 @@ class TypeConversionDict(dict[_K, _V]):
                      :class:`MultiDict`. If a :exc:`ValueError` or a
                      :exc:`TypeError` is raised by this callable the default
                      value is returned.
+        :param required: If set to `True` the key is required. If set to
+                        `False` the default value is returned instead.
         """
         __tracebackhide__ = True
         try:
@@ -146,11 +148,14 @@ class TypeConversionDict(dict[_K, _V]):
 
     # Normal pop with default
     # If the key is not found, the default is returned
+    # Presence of default overrides required unless required is also explicitly set to True
 
     @overload
     def pop(self, key: _K, default: _D) -> Union[_D, _V]: ...
     @overload
-    def pop(self, key: _K, default: _D, *, required: Literal[True]) -> Union[_D, _V]: ...
+    def pop(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V]: ...
+    @overload
+    def pop(self, key: _K, default: object, *, required: Literal[True]) -> _V: ...
 
     # Get with type. No default therefore default is None
 
@@ -165,7 +170,9 @@ class TypeConversionDict(dict[_K, _V]):
     # This is the same behaviour as werzeug's TypeConversionDict
 
     @overload
-    def pop(self, key: _K, default: object, *, type: Callable[[_V], _T]) -> _T: ...
+    def pop(self, key: _K, default: _D, *, type: Callable[[_V], _T]) -> Union[_D, _T]: ...
+    @overload
+    def pop(self, key: _K, default: _D, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_D, _T]: ...
     @overload
     def pop(self, key: _K, default: object, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
 
@@ -173,8 +180,6 @@ class TypeConversionDict(dict[_K, _V]):
 
     @overload
     def pop(self, key: _K, *, required: Literal[False]) -> Union[_V, None]: ...
-    @overload
-    def pop(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V]: ...
 
     # Get with type and required.
     # Default is ignored and the key is required.
@@ -183,8 +188,6 @@ class TypeConversionDict(dict[_K, _V]):
 
     @overload
     def pop(self, key: _K, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_T, None]: ...
-    @overload
-    def pop(self, key: _K, default: _D, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_D, _T]: ...
 
     @override
     def pop(  # type: ignore[no-untyped-def]
@@ -193,7 +196,7 @@ class TypeConversionDict(dict[_K, _V]):
         default=_missing,  # Default to None
         *,
         type=_missing,  # Default to no type conversion
-        required=_missing,  # Default to **True**
+        required=_missing,  # Default to mixed behaviour
     ):
         """Like :meth:`get` but removes the key/value pair.
 
@@ -214,6 +217,8 @@ class TypeConversionDict(dict[_K, _V]):
         :param type: A callable that is used to cast the value in the dict.
                         If a :exc:`ValueError` or a :exc:`TypeError` is raised
                         by this callable the default value is returned.
+        :param required: If set to `True` the key is required. If set to
+                        `False` the default value is returned instead.
 
         .. admonition:: note
 
@@ -225,22 +230,31 @@ class TypeConversionDict(dict[_K, _V]):
         try:
             rv = self[key]
         except KeyError:
-            if required is _missing or required:
-                # required is True. Raise KeyError
-                raise
             if default is _missing:
+                # No default, therefore behave as if required is True by default
+                if required is _missing or required:
+                    raise
                 return None
-            return default
+            else:
+                # default is provided, therefore behave as if required is False by default
+                if required is _missing or not required:
+                    return default
+                raise
+
         if type is not _missing:
             try:
                 rv = type(rv)  # pyright: ignore[reportCallIssue]
             except ValueError:
-                if required is _missing or required:
-                    raise
+                if default is _missing:
+                    # No default, therefore behave as if required is True by default
+                    if required is _missing or required:
+                        raise
+                    return None
                 else:
-                    if default is _missing:
-                        return None
-                    return default
+                    # default is provided, therefore behave as if required is False by default
+                    if required is _missing or not required:
+                        return default
+                    raise
         try:
             # This method is not meant to be thread-safe, but at least lets not
             # fall over if the dict was mutated between the get and the delete. -MK

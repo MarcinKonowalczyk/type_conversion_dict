@@ -33,8 +33,9 @@ def test_normal_pop_required() -> None:
 def test_normal_pop_default() -> None:
     d = TypeConversionDict(foo="42")
 
-    with pytest.raises(KeyError):
-        _value = d.pop("bar", "default")
+    value = d.pop("bar", "default")
+    assert_type(value, str)
+    assert value == "default"
 
     value = d.pop("bar", "default", required=False)
     assert_type(value, str)
@@ -53,7 +54,8 @@ def test_normal_pop_default_required() -> None:
     assert "foo" not in d
 
     with pytest.raises(KeyError):
-        _value = d.pop("bar", "default", required=True)
+        _value = d.pop("bar", 3.14, required=True)
+        assert_type(_value, str)
 
     value = d.pop("bar", "default", required=False)
     assert value == "default"
@@ -101,23 +103,29 @@ def test_pop_with_type_required() -> None:
     assert "foo" in d
 
 
+def test_from_docstring() -> None:
+    d = TypeConversionDict(foo="42", bar="blub")
+    d.pop("foo", type=int)
+    value = d.pop("bar", -1, type=int)
+    assert_type(value, int)
+
+
 def test_pop_with_type_default() -> None:
     d = TypeConversionDict(foo="42")
 
-    with pytest.raises(KeyError):
-        _value = d.pop("bar", "default", type=int)
-        assert_type(_value, int)
+    value = d.pop("bar", "default", type=int)
+    assert_type(value, Union[int, str])
+    assert value == "default"
 
     def _my_type(value: str) -> int:
         return int(value) + 1
 
     value = d.pop("foo", "default", type=_my_type)
-    assert_type(value, int)
+    assert_type(value, Union[int, str])
     assert value == 43
 
-    with pytest.raises(KeyError):
-        _value = d.pop("bar", "default", type=_my_type)
-        assert_type(_value, int)
+    value = d.pop("bar", "default", type=_my_type)
+    assert_type(value, Union[int, str])
 
 
 def test_pop_with_type_default_required() -> None:
