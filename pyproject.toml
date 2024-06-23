@@ -93,4 +93,10 @@ line-length = 120
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = ["-s", "--tb=short", "--color=yes"]
+addopts = [
+    "-s",
+    "--tb=short",
+    "--color=yes",
+    # "--doctest-modules",
+    #
+]
