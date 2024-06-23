@@ -76,7 +76,7 @@ def test_get_with_type_required() -> None:
         return 42
 
     value = d.get("foo", type=_my_type, required=False)
-    assert value == None # since the value is not 'hello'
+    assert value is None  # since the value is not 'hello'
 
     with pytest.raises(ValueError):
         _value = d.get("foo", type=_my_type, required=True)
