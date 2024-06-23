@@ -74,7 +74,12 @@ exclude = [
     "*-env",
 ]
 line-length = 120
-lint.ignore = ["E402", "E501", "E731", "SIM105"]
+lint.ignore = [
+    "E731",
+    "SIM105",
+    "SIM108",
+    #
+]
 lint.select = [
     "E",   # pycodestyle
     "F",   # Pyflakes

@@ -4,6 +4,8 @@ Single-file module with type-conversion dict.
 
 Inspired by [werzeug.datastructures.TypeConversionDict](https://github.com/pallets/werkzeug/blob/62e3ea45846d06576199a2f8470be7fe44c867c1/src/werkzeug/datastructures/structures.py).
 
+Tested in Python 3.9+.
+
 ## Install
 
 Just copy the sintle-module file to your project and import it.

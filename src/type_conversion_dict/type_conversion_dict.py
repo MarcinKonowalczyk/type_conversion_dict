@@ -5,7 +5,7 @@ Inspired by werzeug.datastructures.TypeConversionDict.
 Written by Marcin Konowalczyk.
 """
 
-from typing import TYPE_CHECKING, Callable, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Callable, Literal, TypeVar, Union, overload
 
 if TYPE_CHECKING:
     from typing_extensions import override
@@ -17,7 +17,7 @@ _V = TypeVar("_V")
 _D = TypeVar("_D")
 _T = TypeVar("_T")
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = ["TypeConversionDict"]
 
@@ -25,22 +25,69 @@ _missing = object()
 
 
 class TypeConversionDict(dict[_K, _V]):
-    """Works like a regular dict but the :meth:`get`"""
+    """Works like a regular dict but :meth:`get` and :meth:`pop` but can
+    convert values to a specified type, and handle/enforce required values.
+    """
+
+    # Normal get
+    # If the key is not found, None is returned
 
     @overload
-    def get(self, key: _K, default: None = ..., type: None = ...) -> Union[_V, None]: ...
+    def get(self, key: _K) -> Union[_V, None]: ...
+    @overload
+    def get(self, key: _K, *, required: Literal[False]) -> _V: ...
+
+    # Normal get with default
+    # If the key is not found, the default is returned
 
     @overload
-    def get(self, key: _K, default: _D, type: None = ...) -> Union[_D, _V]: ...
+    def get(self, key: _K, default: _D) -> Union[_D, _V]: ...
+    @overload
+    def get(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V, None]: ...
+
+    # Get with type. No default therefore default is None
 
     @overload
-    def get(self, key: _K, default: _D, type: Callable[[_V], _T]) -> Union[_D, _T]: ...
+    def get(self, key: _K, *, type: Callable[[_V], _T]) -> Union[_T, None]: ...
+    @overload
+    def get(self, key: _K, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_T, None]: ...
+
+    # Get with default and type. Default is returned if key is not found.
+    # The default is *not* run through the type conversion
+    # If the type conversion fails, the default is returned
+    # This is the same behaviour as werzeug's TypeConversionDict
 
     @overload
-    def get(self, key: _K, type: Callable[[_V], _T]) -> Union[_T, None]: ...
+    def get(self, key: _K, default: _D, *, type: Callable[[_V], _T]) -> Union[_D, _T]: ...
+    @overload
+    def get(self, key: _K, default: _D, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_D, _T]: ...
 
-    @override  # type: ignore[misc]
-    def get(self, key, default=None, type=None):  # type: ignore[no-untyped-def]
+    # Get with required. Default is ignored and the key is required. Equivalent to [] access
+
+    @overload
+    def get(self, key: _K, *, required: Literal[True]) -> _V: ...
+    @overload
+    def get(self, key: _K, default: object, *, required: Literal[True]) -> _V: ...
+
+    # Get with type and required.
+    # Default is ignored and the key is required.
+    # Type conversion must succeed or a ValueError is raised.
+    # Equivalent to [] access but with type conversion.
+
+    @overload
+    def get(self, key: _K, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
+    @overload
+    def get(self, key: _K, default: object, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
+
+    @override
+    def get(  # type: ignore[no-untyped-def]
+        self,
+        key,
+        default=_missing,  # Default to None
+        *,
+        type=_missing,  # Default to no type conversion
+        required=_missing,  # Default to False
+    ):
         """Return the default value if the requested data doesn't exist.
         If `type` is provided and is a callable it should convert the value,
         return it or raise a :exc:`ValueError` if that is not possible. In
@@ -65,12 +112,26 @@ class TypeConversionDict(dict[_K, _V]):
         try:
             rv = self[key]
         except KeyError:
-            return default
-        if type is not None:
+            if required is _missing or not required:
+                # required is False. return default
+                if default is _missing:
+                    # default is not provided. return None
+                    return None
+                return default
+            raise
+
+        if type is not _missing:
             try:
                 rv = type(rv)
-            except (ValueError, TypeError):
-                rv = default
+            except ValueError:
+                if required is _missing or not required:
+                    # Type conversion failed. Return default
+                    if default is _missing:
+                        return None
+                    else:
+                        return default
+                raise
+
         return rv
 
     @overload
@@ -125,7 +186,7 @@ class TypeConversionDict(dict[_K, _V]):
         if type is not None:
             try:
                 rv = type(rv)
-            except (ValueError, TypeError):
+            except ValueError:
                 if default is _missing:
                     return None
                 return default
