@@ -157,3 +157,30 @@ def test_get_with_type_default_required() -> None:
     with pytest.raises(ValueError):
         _value = d.get("foo", "default", type=_my_type, required=True)
         assert_type(_value, int)
+
+
+def test_get_missing_with_type() -> None:
+    d = TypeConversionDict(foo="42")
+    assert d.get("foo", type=int) == 42
+
+    # Foo is none
+    d: TypeConversionDict = TypeConversionDict(foo=None)
+    with pytest.raises(ValueError):
+        _value = d.get("foo", type=int, required=True)
+
+    d = TypeConversionDict(foo=None)
+    assert d.get("foo", type=int, required=False) is None
+
+    d = TypeConversionDict(foo=None)
+    assert d.get("foo", type=int) is None
+
+    # No foo
+    d: TypeConversionDict = TypeConversionDict()
+    with pytest.raises(KeyError):
+        _value = d.get("foo", type=int, required=True)
+
+    d = TypeConversionDict()
+    assert d.get("foo", type=int, required=False) is None
+
+    d = TypeConversionDict()
+    assert d.get("foo", type=int) is None

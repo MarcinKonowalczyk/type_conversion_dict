@@ -163,3 +163,32 @@ def test_pop_with_type_default_required() -> None:
     with pytest.raises(ValueError):
         _value = d.pop("foo", "default", type=_my_type, required=True)
         assert_type(_value, int)
+
+
+def test_pop_missing_with_type() -> None:
+    d = TypeConversionDict(foo="42")
+    assert d.pop("foo", type=int) == 42
+
+    # Foo is none
+    d: TypeConversionDict = TypeConversionDict(foo=None)
+    with pytest.raises(ValueError):
+        _value = d.pop("foo", type=int, required=True)
+
+    d = TypeConversionDict(foo=None)
+    assert d.pop("foo", type=int, required=False) is None
+
+    d = TypeConversionDict(foo=None)
+    with pytest.raises(ValueError):
+        _value = d.pop("foo", type=int)
+
+    # No foo
+    d: TypeConversionDict = TypeConversionDict()
+    with pytest.raises(KeyError):
+        _value = d.pop("foo", type=int, required=True)
+
+    d = TypeConversionDict()
+    assert d.pop("foo", type=int, required=False) is None
+
+    d = TypeConversionDict()
+    with pytest.raises(KeyError):
+        _value = d.pop("foo", type=int)

@@ -18,7 +18,7 @@ _V = TypeVar("_V")  # value
 _D = TypeVar("_D")  # default
 _T = TypeVar("_T")  # converted type
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = ["TypeConversionDict"]
 
@@ -127,14 +127,17 @@ class TypeConversionDict(dict[_K, _V]):
         if type is not _missing:
             try:
                 rv = type(rv)  # pyright: ignore[reportCallIssue]
-            except ValueError:
+            except (ValueError, TypeError) as e:
                 if required is _missing or not required:
                     # Type conversion failed. Return default
                     if default is _missing:
                         return None
                     else:
                         return default
-                raise
+                if isinstance(e, ValueError):
+                    raise
+                else:
+                    raise ValueError(str(e)) from None
 
         return rv
 
@@ -244,17 +247,23 @@ class TypeConversionDict(dict[_K, _V]):
         if type is not _missing:
             try:
                 rv = type(rv)  # pyright: ignore[reportCallIssue]
-            except ValueError:
+            except (ValueError, TypeError) as e:
                 if default is _missing:
                     # No default, therefore behave as if required is True by default
                     if required is _missing or required:
-                        raise
+                        if isinstance(e, ValueError):
+                            raise
+                        else:
+                            raise ValueError(str(e)) from None
                     return None
                 else:
                     # default is provided, therefore behave as if required is False by default
                     if required is _missing or not required:
                         return default
-                    raise
+                    if isinstance(e, ValueError):
+                        raise
+                    else:
+                        raise ValueError(str(e)) from None
         try:
             # This method is not meant to be thread-safe, but at least lets not
             # fall over if the dict was mutated between the get and the delete. -MK
