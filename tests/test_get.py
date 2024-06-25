@@ -160,27 +160,27 @@ def test_get_with_type_default_required() -> None:
 
 
 def test_get_missing_with_type() -> None:
-    d = TypeConversionDict(foo="42")
-    assert d.get("foo", type=int) == 42
+    d1 = TypeConversionDict(foo="42")
+    assert d1.get("foo", type=int) == 42
 
     # Foo is none
-    d: TypeConversionDict = TypeConversionDict(foo=None)
+    d2: TypeConversionDict = TypeConversionDict(foo=None)
     with pytest.raises(ValueError):
-        _value = d.get("foo", type=int, required=True)
+        _value = d2.get("foo", type=int, required=True)
 
-    d = TypeConversionDict(foo=None)
-    assert d.get("foo", type=int, required=False) is None
+    d3: TypeConversionDict = TypeConversionDict(foo=None)
+    assert d3.get("foo", type=int, required=False) is None
 
-    d = TypeConversionDict(foo=None)
-    assert d.get("foo", type=int) is None
+    d4: TypeConversionDict = TypeConversionDict(foo=None)
+    assert d4.get("foo", type=int) is None
 
     # No foo
-    d: TypeConversionDict = TypeConversionDict()
+    d5: TypeConversionDict = TypeConversionDict()
     with pytest.raises(KeyError):
-        _value = d.get("foo", type=int, required=True)
+        _value = d5.get("foo", type=int, required=True)
 
-    d = TypeConversionDict()
-    assert d.get("foo", type=int, required=False) is None
+    d6: TypeConversionDict = TypeConversionDict()
+    assert d6.get("foo", type=int, required=False) is None
 
-    d = TypeConversionDict()
-    assert d.get("foo", type=int) is None
+    d7: TypeConversionDict = TypeConversionDict()
+    assert d7.get("foo", type=int) is None
