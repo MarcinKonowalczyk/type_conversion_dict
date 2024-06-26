@@ -1,11 +1,12 @@
 name: test-commit
 
 on:
-  push:
-    branches: [main]
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     env:
