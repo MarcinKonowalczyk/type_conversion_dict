@@ -166,29 +166,30 @@ def test_pop_with_type_default_required() -> None:
 
 
 def test_pop_missing_with_type() -> None:
-    d = TypeConversionDict(foo="42")
-    assert d.pop("foo", type=int) == 42
+    d1 = TypeConversionDict(foo="42")
+    assert d1.pop("foo", type=int) == 42
 
     # Foo is none
-    d: TypeConversionDict = TypeConversionDict(foo=None)
+    d2: TypeConversionDict = TypeConversionDict(foo=None)
     with pytest.raises(ValueError):
-        _value = d.pop("foo", type=int, required=True)
+        _value = d2.pop("foo", type=int, required=True)
 
-    d = TypeConversionDict(foo=None)
-    assert d.pop("foo", type=int, required=False) is None
+    d3: TypeConversionDict = TypeConversionDict(foo=None)
+    assert d3.pop("foo", type=int, required=False) is None
 
-    d = TypeConversionDict(foo=None)
+    d4: TypeConversionDict = TypeConversionDict(foo=None)
     with pytest.raises(ValueError):
-        _value = d.pop("foo", type=int)
+        _value = d4.pop("foo", type=int)
+        print(_value)
 
     # No foo
-    d: TypeConversionDict = TypeConversionDict()
+    d5: TypeConversionDict = TypeConversionDict()
     with pytest.raises(KeyError):
-        _value = d.pop("foo", type=int, required=True)
+        _value = d5.pop("foo", type=int, required=True)
 
-    d = TypeConversionDict()
-    assert d.pop("foo", type=int, required=False) is None
+    d6: TypeConversionDict = TypeConversionDict()
+    assert d6.pop("foo", type=int, required=False) is None
 
-    d = TypeConversionDict()
+    d7: TypeConversionDict = TypeConversionDict()
     with pytest.raises(KeyError):
-        _value = d.pop("foo", type=int)
+        _value = d7.pop("foo", type=int)

@@ -18,11 +18,13 @@ _V = TypeVar("_V")  # value
 _D = TypeVar("_D")  # default
 _T = TypeVar("_T")  # converted type
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 __all__ = ["TypeConversionDict"]
 
 _missing = object()
+
+_type = type
 
 
 class TypeConversionDict(dict[_K, _V]):
@@ -118,26 +120,35 @@ class TypeConversionDict(dict[_K, _V]):
         except KeyError:
             if required is _missing or not required:
                 # required is False. return default
-                if default is _missing:
+                if default is _missing or default is None:
                     # default is not provided. return None
                     return None
                 return default
             raise
 
+        # Check for rv already being the default value. If so, return it without type conversion
+        if default is _missing or default is None:
+            if rv is None:
+                if required is _missing or not required:
+                    return None
+                else:
+                    raise ValueError(f"Required key {key} is None")
+        else:
+            if rv is default or _type(rv) is _type(default) and rv == default:
+                return rv
+
+        # Type conversion
         if type is not _missing:
             try:
                 rv = type(rv)  # pyright: ignore[reportCallIssue]
-            except (ValueError, TypeError) as e:
+            except ValueError:
                 if required is _missing or not required:
                     # Type conversion failed. Return default
-                    if default is _missing:
+                    if default is _missing or default is None:
                         return None
                     else:
                         return default
-                if isinstance(e, ValueError):
-                    raise
-                else:
-                    raise ValueError(str(e)) from None
+                raise
 
         return rv
 
@@ -244,26 +255,33 @@ class TypeConversionDict(dict[_K, _V]):
                     return default
                 raise
 
-        if type is not _missing:
+        # Check for rv already being the default value. If so, return it without type conversion
+        _skip_type_conversion = False
+        if default is _missing:
+            # No default, therefore behave as if required is True by default
+            if rv is None:
+                if required is _missing or required:
+                    raise ValueError(f"Required key {key} is None")
+                else:
+                    return None
+        else:
+            if rv is default or _type(rv) is _type(default) and rv == default:
+                _skip_type_conversion = True
+
+        if type is not _missing and not _skip_type_conversion:
             try:
                 rv = type(rv)  # pyright: ignore[reportCallIssue]
-            except (ValueError, TypeError) as e:
+            except ValueError:
                 if default is _missing:
                     # No default, therefore behave as if required is True by default
                     if required is _missing or required:
-                        if isinstance(e, ValueError):
-                            raise
-                        else:
-                            raise ValueError(str(e)) from None
+                        raise
                     return None
                 else:
                     # default is provided, therefore behave as if required is False by default
                     if required is _missing or not required:
                         return default
-                    if isinstance(e, ValueError):
-                        raise
-                    else:
-                        raise ValueError(str(e)) from None
+                    raise
         try:
             # This method is not meant to be thread-safe, but at least lets not
             # fall over if the dict was mutated between the get and the delete. -MK
