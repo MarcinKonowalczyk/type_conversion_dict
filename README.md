@@ -22,16 +22,18 @@ Tested in Python 3.9+.
 Just copy the sintle-module file to your project and import it.
 
 ```bash
-cp ./src/type_conversion_dict/type_conversion_dict.py <wherever-your-heart-deisres>
+cp ./src/type_conversion_dict/type_conversion_dict.py src/your_package/_type_conversion_dict.py
 ```
 
 Or even better, without checking out the repository:
 
 ```bash
-curl -O https://raw.githubusercontent.com/MarcinKonowalczyk/type_conversion_dict/main/src/type_conversion_dict/type_conversion_dict.py
+curl https://raw.githubusercontent.com/MarcinKonowalczyk/type_conversion_dict/main/src/type_conversion_dict/type_conversion_dict.py | src/your_package/_type_conversion_dict.py
 ```
 
-Or build and install the package.
+Note that like this *you take ownership of the code* and you are responsible for keeping it up-to-date. If you change it that's fine (keep the license pls). That's the point here. You can also copy the code to your project and modify it as you wish.
+
+If you want you can also build and install it as a package, but then the source lives somewhere else. That might be what you want though. 🤷‍♀️
 
 ```bash
 pip install flit
