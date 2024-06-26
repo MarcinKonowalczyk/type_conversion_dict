@@ -1,3 +1,4 @@
+Copyright 2007-2024 Pallets
 Copyright 2024 Marcin Konowalczyk
 
 Redistribution and use in source and binary forms, with or without
