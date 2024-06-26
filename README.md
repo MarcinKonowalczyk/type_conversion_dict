@@ -6,6 +6,17 @@ Inspired by [werzeug.datastructures.TypeConversionDict](https://github.com/palle
 
 Tested in Python 3.9+.
 
+# Usage
+
+```python
+>>> from type_conversion_dict import TypeConversionDict
+>>> d = TypeConversionDict(foo='42', bar='blub')
+>>> d.get('foo', type=int)
+42
+>>> d.get('bar', -1, type=int)
+-1
+```
+
 ## Install
 
 Just copy the sintle-module file to your project and import it.
