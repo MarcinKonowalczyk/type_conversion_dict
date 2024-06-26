@@ -13,10 +13,10 @@ def test_license() -> None:
     assert source_file.exists(), f"Source file {source_file} not found."
 
     # Make sure the license is included in the source file verbatim
-    with open(license_file, "r") as f:
+    with open(license_file) as f:
         license_text = f.read()
 
-    with open(source_file, "r") as f:
+    with open(source_file) as f:
         source_text = f.read()
 
     assert license_text in source_text, "License not found in source file."
