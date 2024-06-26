@@ -18,7 +18,7 @@ _V = TypeVar("_V")  # value
 _D = TypeVar("_D")  # default
 _T = TypeVar("_T")  # converted type
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 __all__ = ["TypeConversionDict"]
 
