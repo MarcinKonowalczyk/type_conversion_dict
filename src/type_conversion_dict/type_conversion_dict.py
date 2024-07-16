@@ -7,7 +7,7 @@ Inspired by werzeug.datastructures.TypeConversionDict.
 Written by Marcin Konowalczyk.
 """
 
-from typing import TYPE_CHECKING, Callable, Literal, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar, Union, overload
 
 if TYPE_CHECKING:
     # import like this not to acquire a dependency on typing_extensions
@@ -20,9 +20,9 @@ _V = TypeVar("_V")  # value
 _D = TypeVar("_D")  # default
 _T = TypeVar("_T")  # converted type
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
-__all__ = ["TypeConversionDict"]
+__all__ = ["TypeConversionDict", "nested_convert"]
 
 _missing = object()
 
@@ -291,6 +291,58 @@ class TypeConversionDict(dict[_K, _V]):
         except KeyError:
             pass
         return rv
+
+
+# NOTE: Python is not great with recursive types. For now there are just
+# two overloads for nested_convert. One for dict and one for list, but they
+# drop the value type on purpose.
+
+
+@overload
+def nested_convert(d: dict[_K, _V]) -> TypeConversionDict[_K, Any]: ...
+@overload
+def nested_convert(d: list) -> list: ...
+@overload
+def nested_convert(d: Any, *, _depth: int) -> Any: ...
+
+
+def nested_convert(
+    d: Union[dict, list],
+    *,
+    _depth: int = 0,
+) -> Union[TypeConversionDict, list]:
+    """Convert a nested dict to a TypeConversionDict.
+    Nested dicts and dicts inside lists are converted recursively.
+    This is particularly useful when converting JSON to a TypeConversionDict.
+
+    This function is provided as a convenience for a common operation and
+    a reference implementation.
+
+    >>> d = {"a": {"b": [{"c": "1"}]}}
+    >>> dc = nested_convert(d)
+    >>> isinstance(dc, TypeConversionDict)
+    True
+    >>> isinstance(dc["a"], TypeConversionDict)
+    True
+    >>> isinstance(dc["a"]["b"][0], TypeConversionDict)
+    True
+
+    :param d: The dict or list to convert.
+    :param _depth: Internal parameter for recursion depth tracking.
+    :return: The converted dict or list.
+
+    """
+
+    if isinstance(d, dict):
+        kv = ((k, nested_convert(v, _depth=_depth + 1)) for k, v in d.items())
+        return TypeConversionDict(kv)
+    elif isinstance(d, list):
+        vs = (nested_convert(v, _depth=_depth + 1) for v in d)
+        return list(vs)
+    else:
+        if _depth == 0:
+            raise TypeError("Input must be a dict or a list")
+        return d
 
 
 __license__ = """

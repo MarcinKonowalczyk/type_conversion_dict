@@ -3,4 +3,5 @@ from .type_conversion_dict import (  # noqa: F401
     __doc__,
     __license__,
     __version__,
+    nested_convert,
 )
