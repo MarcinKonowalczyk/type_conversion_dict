@@ -1,6 +1,8 @@
 """
 Single-file module with type-conversion dict.
 
+Hosted at https://github.com/MarcinKonowalczyk/type_conversion_dict
+
 Inspired by werzeug.datastructures.TypeConversionDict.
 Written by Marcin Konowalczyk.
 """
