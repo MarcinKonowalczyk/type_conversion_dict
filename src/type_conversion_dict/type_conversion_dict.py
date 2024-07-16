@@ -284,7 +284,7 @@ class TypeConversionDict(dict[_K, _V]):
                     if required is _missing or not required:
                         return default
                     raise
-        try:
+        try:  # noqa: SIM105, RUF100
             # This method is not meant to be thread-safe, but at least lets not
             # fall over if the dict was mutated between the get and the delete. -MK
             del self[key]
