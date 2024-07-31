@@ -93,6 +93,8 @@ lint.select = [
     # "PL",
 ]
 
+output-format = "concise"
+
 [tool.black]
 line-length = 120
 
