@@ -19,7 +19,7 @@ Tested in Python 3.9+.
 
 ## Install
 
-Just copy the sintle-module file to your project and import it.
+Just copy the single-module file to your project and import it.
 
 ```bash
 cp ./src/type_conversion_dict/type_conversion_dict.py src/your_package/_type_conversion_dict.py
