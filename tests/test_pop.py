@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Union
 
 import pytest
+
 from type_conversion_dict import TypeConversionDict
 
 if TYPE_CHECKING:

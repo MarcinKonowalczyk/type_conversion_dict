@@ -77,6 +77,10 @@ line-length = 120
 lint.ignore = [
     "E731",
     "SIM105",
+    "PLR0911", # too many return statements
+    "PLR0912", # too many branches
+    "PLR0913", # too many arguments in function definition
+    "PLR2004", # magic values
     # "SIM108",
     #
 ]
@@ -90,7 +94,12 @@ lint.select = [
     "I",   # isort
     "Q",   # flake8-quotes
     "RUF", # ruff
-    # "PL",
+    # "TID", # flake8-tidy-imports
+    "PERF", # perflint
+    "FURB", # refurb
+    "PL",   # pylint
+    "NPY",  # numpy
+    #
 ]
 
 output-format = "concise"

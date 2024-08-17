@@ -20,7 +20,7 @@ _V = TypeVar("_V")  # value
 _D = TypeVar("_D")  # default value
 _T = TypeVar("_T")  # converted type
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = ["TypeConversionDict", "nested_convert"]
 
@@ -168,7 +168,7 @@ class TypeConversionDict(dict[_K, _V]):
                 # and then optionally skip the type conversion. since the default_factory
                 # can be expensive, we just run the type conversion
                 pass
-        else:
+        else:  # noqa: PLR5501
             # we have a default value. check if rv is the default value
             if rv is default or _type(rv) is _type(default) and rv == default:
                 return rv
@@ -337,7 +337,7 @@ class TypeConversionDict(dict[_K, _V]):
                 # We have the rv, no default value and a default_factory.
                 # No skipping of type conversion here, as default_factory can be expensive
                 pass
-        else:
+        else:  # noqa: PLR5501
             # Maybe skip type conversion
             if rv is default or _type(rv) is _type(default) and rv == default:
                 _skip_type_conversion = True
