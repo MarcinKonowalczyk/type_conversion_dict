@@ -102,7 +102,7 @@ class TypeConversionDict(dict[_K, _V]):
     def get(  # type: ignore[no-untyped-def]
         self,
         key,
-        default=_missing,  # Default to None
+        default=None,
         *,
         default_factory=_missing,
         type=_missing,  # Default to no type conversion
@@ -142,7 +142,7 @@ class TypeConversionDict(dict[_K, _V]):
         except KeyError:
             if required is _missing or not required:
                 # required is False. return default
-                if default is _missing or default is None:
+                if default is None:
                     # default is not provided. what about default_factory?
                     if default_factory is _missing:
                         return None
@@ -154,7 +154,7 @@ class TypeConversionDict(dict[_K, _V]):
             raise
 
         # Check for rv already being the default value. If so, return it without type conversion
-        if default is _missing or default is None:
+        if default is None:
             # default value is missing. how about the default_factory though?
             if default_factory is _missing:
                 if rv is None:
@@ -180,7 +180,7 @@ class TypeConversionDict(dict[_K, _V]):
             except ValueError:
                 if required is _missing or not required:
                     # Type conversion failed. Return default
-                    if default is _missing or default is None:
+                    if default is None:
                         # no default. how about default_factory?
                         if default_factory is _missing:
                             return None
