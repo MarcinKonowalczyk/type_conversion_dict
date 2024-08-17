@@ -17,10 +17,10 @@ else:
 
 _K = TypeVar("_K")  # key
 _V = TypeVar("_V")  # value
-_D = TypeVar("_D")  # default
+_D = TypeVar("_D")  # default value
 _T = TypeVar("_T")  # converted type
 
-__version__ = "0.1.6"
+__version__ = "0.2.0"
 
 __all__ = ["TypeConversionDict", "nested_convert"]
 
@@ -49,6 +49,10 @@ class TypeConversionDict(dict[_K, _V]):
     def get(self, key: _K, default: _D) -> Union[_D, _V]: ...
     @overload
     def get(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V]: ...
+    @overload
+    def get(self, key: _K, *, default_factory: Callable[[], _D]) -> Union[_D, _V]: ...
+    @overload
+    def get(self, key: _K, *, default_factory: Callable[[], _D], required: Literal[False]) -> Union[_D, _V]: ...
 
     # Get with type. No default therefore default is None
 
@@ -66,6 +70,12 @@ class TypeConversionDict(dict[_K, _V]):
     def get(self, key: _K, default: _D, *, type: Callable[[_V], _T]) -> Union[_D, _T]: ...
     @overload
     def get(self, key: _K, default: _D, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_D, _T]: ...
+    @overload
+    def get(self, key: _K, *, default_factory: Callable[[], _D], type: Callable[[_V], _T]) -> Union[_D, _T]: ...
+    @overload
+    def get(
+        self, key: _K, *, default_factory: Callable[[], _D], type: Callable[[_V], _T], required: Literal[False]
+    ) -> Union[_D, _T]: ...
 
     # Get with required. Default is ignored and the key is required. Equivalent to [] access
 
@@ -73,6 +83,8 @@ class TypeConversionDict(dict[_K, _V]):
     def get(self, key: _K, *, required: Literal[True]) -> _V: ...
     @overload
     def get(self, key: _K, default: object, *, required: Literal[True]) -> _V: ...
+    @overload
+    def get(self, key: _K, *, default_factory: object, required: Literal[True]) -> _V: ...
 
     # Get with type and required.
     # Default is ignored and the key is required.
@@ -83,6 +95,8 @@ class TypeConversionDict(dict[_K, _V]):
     def get(self, key: _K, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
     @overload
     def get(self, key: _K, default: object, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
+    @overload
+    def get(self, key: _K, *, default_factory: object, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
 
     @override
     def get(  # type: ignore[no-untyped-def]
@@ -90,6 +104,7 @@ class TypeConversionDict(dict[_K, _V]):
         key,
         default=_missing,  # Default to None
         *,
+        default_factory=_missing,
         type=_missing,  # Default to no type conversion
         required=_missing,  # Default to False
     ):
@@ -107,15 +122,17 @@ class TypeConversionDict(dict[_K, _V]):
 
         :param key: The key to be looked up.
         :param default: The default value to be returned if the key can't
-                        be looked up. If not further specified `None` is
-                        returned.
-        :param type: A callable that is used to cast the value in the
-                     :class:`MultiDict`. If a :exc:`ValueError` or a
-                     :exc:`TypeError` is raised by this callable the default
-                     value is returned.
-        :param required: If set to `True` the key is required. If set to
-                        `False` the default value is returned instead.
+            be looked up. If not further specified `None` is returned.
+            Mutually exclusive with `default_factory`.
+        :param default_factory: A callable that returns the default value.
+        Mutually exclusive with `default`.
+        :param type: A callable that is used to cast the value. If a ValueError
+            or is raised by this callable the default value is
+            returned.
+        :param required: If set to `True` the key is required. If set to False
+            the default value is returned instead.
         """
+
         __tracebackhide__ = True
         try:
             rv = self[key]
@@ -123,19 +140,33 @@ class TypeConversionDict(dict[_K, _V]):
             if required is _missing or not required:
                 # required is False. return default
                 if default is _missing or default is None:
-                    # default is not provided. return None
-                    return None
+                    # default is not provided. what about default_factory?
+                    if default_factory is _missing:
+                        return None
+                    else:
+                        # default_factory is provided. return its result
+                        # we do not handle the errors in default_factory
+                        return default_factory()
                 return default
             raise
 
         # Check for rv already being the default value. If so, return it without type conversion
         if default is _missing or default is None:
-            if rv is None:
-                if required is _missing or not required:
-                    return None
-                else:
-                    raise ValueError(f"Required key {key} is None")
+            # default value is missing. how about the default_factory though?
+            if default_factory is _missing:
+                if rv is None:
+                    if required is _missing or not required:
+                        return None
+                    else:
+                        raise ValueError(f"Required key {key} is None")
+            else:
+                # re have rv, no default value and a default_factory.
+                # if we had the default value we'd want to check if rv is the default value
+                # and then optionally skip the type conversion. since the default_factory
+                # can be expensive, we just run the type conversion
+                pass
         else:
+            # we have a default value. check if rv is the default value
             if rv is default or _type(rv) is _type(default) and rv == default:
                 return rv
 
@@ -147,7 +178,11 @@ class TypeConversionDict(dict[_K, _V]):
                 if required is _missing or not required:
                     # Type conversion failed. Return default
                     if default is _missing or default is None:
-                        return None
+                        # no default. how about default_factory?
+                        if default_factory is _missing:
+                            return None
+                        else:
+                            return default_factory()
                     else:
                         return default
                 raise
