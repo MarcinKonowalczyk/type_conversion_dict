@@ -106,7 +106,7 @@ class TypeConversionDict(dict[_K, _V]):
         *,
         default_factory=_missing,
         type=_missing,  # Default to no type conversion
-        required=_missing,  # Default to False
+        required=False,  # Default to False
     ):
         """Return the default value if the requested data doesn't exist.
         If `type` is provided and is a callable it should convert the value,
@@ -140,7 +140,7 @@ class TypeConversionDict(dict[_K, _V]):
         try:
             rv = self[key]
         except KeyError:
-            if required is _missing or not required:
+            if not required:
                 # required is False. return default
                 if default is None:
                     # default is not provided. what about default_factory?
@@ -158,7 +158,7 @@ class TypeConversionDict(dict[_K, _V]):
             # default value is missing. how about the default_factory though?
             if default_factory is _missing:
                 if rv is None:
-                    if required is _missing or not required:
+                    if not required:
                         return None
                     else:
                         raise ValueError(f"Required key {key} is None")
@@ -178,7 +178,7 @@ class TypeConversionDict(dict[_K, _V]):
             try:
                 rv = type(rv)  # pyright: ignore[reportCallIssue]
             except ValueError:
-                if required is _missing or not required:
+                if not required:
                     # Type conversion failed. Return default
                     if default is None:
                         # no default. how about default_factory?
