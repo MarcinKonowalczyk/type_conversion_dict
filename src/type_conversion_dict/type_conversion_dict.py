@@ -135,6 +135,8 @@ class TypeConversionDict(dict[_K, _V]):
         """
 
         __tracebackhide__ = True
+
+        # Get the value from self and handle what to do if it's not found
         try:
             rv = self[key]
         except KeyError:
@@ -297,6 +299,8 @@ class TypeConversionDict(dict[_K, _V]):
         """
 
         __tracebackhide__ = True
+
+        # Get the value from self and handle what to do if it's not found
         try:
             rv = self[key]
         except KeyError:
@@ -345,7 +349,7 @@ class TypeConversionDict(dict[_K, _V]):
                 if default is _missing:
                     # No default, but lets check for default_factory
                     if default_factory is _missing:
-                        # No default, therefore behave as if required is True by default
+                        # No default or default_factory, therefore behave as if required is True by default
                         if required is _missing or required:
                             raise
                         return None
