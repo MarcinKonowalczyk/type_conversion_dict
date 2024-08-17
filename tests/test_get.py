@@ -46,6 +46,44 @@ def test_normal_get_default() -> None:
     assert value == "default"
 
 
+def test_normal_get_default_kwarg() -> None:
+    d = TypeConversionDict(foo="42")
+    value = d.get("foo", default="default")
+    assert_type(value, str)  # since the default value is a string
+    assert value == "42"
+
+    value = d.get("bar", default="default")
+    assert_type(value, str)
+    assert value == "default"
+
+
+def test_normal_get_default_factory() -> None:
+    _i = 0
+
+    def df() -> str:
+        """Default factory with side effect to make sure it runs correctly"""
+        nonlocal _i
+        _i += 1
+        return "default"
+
+    d = TypeConversionDict(foo="42")
+    value = d.get("foo", default_factory=df)
+    assert_type(value, str)  # since the default value is a string
+    assert value == "42"
+    assert _i == 0
+
+    value = d.get("bar", default_factory=df)
+    assert_type(value, str)
+    assert value == "default"
+    assert _i == 1
+
+    # Run again. The default factory should be called again. We do not cache the result
+    value = d.get("bar", default_factory=df)
+    assert_type(value, str)
+    assert value == "default"
+    assert _i == 2
+
+
 def test_normal_get_default_required() -> None:
     d = TypeConversionDict(foo="42")
     value = d.get("foo", "default", required=False)
@@ -59,7 +97,31 @@ def test_normal_get_default_required() -> None:
     with pytest.raises(KeyError):
         _value = d.get("bar", "default", required=True)
         assert_type(_value, str)
+
+    # make sure that the type of the default value is still 'str' even if default is 'float'
+    with pytest.raises(KeyError):
         _value = d.get("bar", 3.14, required=True)
+        assert_type(_value, str)
+
+
+def test_normal_get_default_factory_required() -> None:
+    d = TypeConversionDict(foo="42")
+    df = lambda: "default"
+    value = d.get("foo", default_factory=df, required=False)
+    assert_type(value, str)
+    assert value == "42"
+
+    value = d.get("bar", default_factory=df, required=False)
+    assert_type(value, str)
+    assert value == "default"
+
+    with pytest.raises(KeyError):
+        _value = d.get("bar", default_factory=df, required=True)
+        assert_type(_value, str)
+
+    # make sure that the type of the default value is still 'str' even if default_factory returns 'float'
+    with pytest.raises(KeyError):
+        _value = d.get("bar", default_factory=lambda: 3.14, required=True)
         assert_type(_value, str)
 
 
@@ -131,7 +193,59 @@ def test_get_with_type_default() -> None:
     assert value == "default"
 
 
+def test_get_with_type_default_factory() -> None:
+    d = TypeConversionDict(foo="42")
+    df = lambda: "default"
+    value = d.get("foo", default_factory=df, type=int)
+    assert_type(value, Union[int, str])
+    assert value == 42
+
+    value = d.get("bar", default_factory=df, type=int)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+    def _my_type(value: str) -> int:
+        return int(value) + 1
+
+    value = d.get("foo", default_factory=df, type=_my_type)
+    assert_type(value, Union[int, str])
+    assert value == 43
+
+    value = d.get("bar", default_factory=df, type=_my_type)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+
 def test_get_with_type_default_required() -> None:
+    d = TypeConversionDict(foo="42")
+    df = lambda: "default"
+    value = d.get("foo", default_factory=df, type=int, required=False)
+    assert_type(value, Union[int, str])
+    assert value == 42
+
+    value = d.get("bar", default_factory=df, type=int, required=False)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+    with pytest.raises(KeyError):
+        _value = d.get("bar", default_factory=df, type=int, required=True)
+        assert_type(_value, int)
+
+    def _my_type(value: str) -> int:
+        if value != "hello":
+            raise ValueError("value must be 'hello'")
+        return 42
+
+    value = d.get("foo", default_factory=df, type=_my_type, required=False)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+    with pytest.raises(ValueError):
+        _value = d.get("foo", default_factory=df, type=_my_type, required=True)
+        assert_type(_value, int)
+
+
+def test_get_with_type_default_factory_required() -> None:
     d = TypeConversionDict(foo="42")
     value = d.get("foo", "default", type=int, required=False)
     assert_type(value, Union[int, str])
@@ -184,3 +298,42 @@ def test_get_missing_with_type() -> None:
 
     d7: TypeConversionDict = TypeConversionDict()
     assert d7.get("foo", type=int) is None
+
+
+def test_get_with_default_and_default_factory() -> None:
+    d = TypeConversionDict(foo="42")
+
+    i = 0
+
+    def df() -> str:
+        """Default factory with side effect to make sure it runs correctly"""
+        nonlocal i
+        i += 1
+        return "default_factory"
+
+    # Both of these should get you being shouted at by the type checker, but they should work
+    _value = d.get("foo", "default", default_factory=df, required=True)  # type: ignore
+    assert _value == "42"
+    assert i == 0
+
+    # Default factory should be ignored if default is provided
+    _value = d.get("bar", "default", default_factory=df, required=False)  # type: ignore
+    assert _value == "default"
+    assert i == 0  # default factory should not run
+
+
+def test_default_factory_classes() -> None:
+    d = TypeConversionDict(foo="42")
+
+    # Make sure we can instantiate basic types
+    value_2: Union[list, str] = d.get("bar", default_factory=list)
+    assert_type(value_2, Union[list, str])
+    assert value_2 == []
+
+    # Make sure we can instantiate classes
+    class MyClass:
+        pass
+
+    value_3: Union[MyClass, str] = d.get("bar", default_factory=MyClass)
+    assert_type(value_3, Union[MyClass, str])
+    assert isinstance(value_3, MyClass)

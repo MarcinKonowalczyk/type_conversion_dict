@@ -46,6 +46,54 @@ def test_normal_pop_default() -> None:
     assert value_2 == 3.14
 
 
+def test_normal_pop_default_kwarg() -> None:
+    d = TypeConversionDict(foo="42")
+
+    value = d.pop("bar", default="default")
+    assert_type(value, str)
+    assert value == "default"
+
+    value = d.pop("bar", default="default", required=False)
+    assert_type(value, str)
+    assert value == "default"
+
+    value_2 = d.pop("bar", default=3.14, required=False)
+    assert_type(value_2, Union[str, float])
+    assert value_2 == 3.14
+
+
+def test_normal_pop_default_factory() -> None:
+    d = TypeConversionDict(foo="42")
+
+    i = 0
+
+    def df() -> str:
+        """Default factory with side effect to make sure it runs correctly"""
+        nonlocal i
+        i += 1
+        return "default"
+
+    value = d.pop("foo", default_factory=df)
+    assert_type(value, str)
+    assert value == "42"
+    assert i == 0
+
+    value = d.pop("bar", default_factory=df)
+    assert_type(value, str)
+    assert value == "default"
+    assert i == 1
+
+    # Run again. The default factory should not run again. We do not cache the result
+    value = d.pop("bar", default_factory=df, required=False)
+    assert_type(value, str)
+    assert value == "default"
+    assert i == 2
+
+    value_2 = d.pop("bar", default_factory=lambda: 3.14, required=False)
+    assert_type(value_2, Union[str, float])
+    assert value_2 == 3.14
+
+
 def test_normal_pop_default_required() -> None:
     d = TypeConversionDict(foo="42")
     value = d.pop("foo", "default", required=True)
@@ -61,6 +109,22 @@ def test_normal_pop_default_required() -> None:
     assert value == "default"
 
 
+def test_normal_pop_default_factory_required() -> None:
+    d = TypeConversionDict(foo="42")
+    df = lambda: "default"
+    value = d.pop("foo", default_factory=df, required=True)
+    assert value == "42"
+
+    assert "foo" not in d
+
+    with pytest.raises(KeyError):
+        _value = d.pop("bar", 3.14, required=True)
+        assert_type(_value, str)
+
+    value = d.pop("bar", default_factory=df, required=False)
+    assert value == "default"
+
+
 def test_pop_with_type() -> None:
     d = TypeConversionDict(foo="42")
 
@@ -68,11 +132,11 @@ def test_pop_with_type() -> None:
         _value = d.pop("bar", type=int)
         assert_type(_value, int)
 
-    def _my_type(value: str) -> int:
+    def type(value: str) -> int:
         return int(value) + 1
 
     with pytest.raises(KeyError):
-        _value = d.pop("bar", type=_my_type)
+        _value = d.pop("bar", type=type)
         assert_type(_value, int)
 
 
@@ -83,19 +147,19 @@ def test_pop_with_type_required() -> None:
         _value = d.pop("bar", type=int, required=True)
         assert_type(_value, int)
 
-    def _my_type(value: str) -> int:
+    def type(value: str) -> int:
         if value != "hello":
             raise ValueError("value must be 'hello'")
         return 42
 
     with pytest.raises(ValueError):
-        _value = d.pop("foo", type=_my_type, required=True)
+        _value = d.pop("foo", type=type, required=True)
         assert_type(_value, int)
 
     # 'foo' was not popped because the type conversion failed
     assert "foo" in d
 
-    value = d.pop("foo", type=_my_type, required=False)
+    value = d.pop("foo", type=type, required=False)
     assert_type(value, Union[int, None])
     assert value is None
 
@@ -117,15 +181,36 @@ def test_pop_with_type_default() -> None:
     assert_type(value, Union[int, str])
     assert value == "default"
 
-    def _my_type(value: str) -> int:
+    def type(value: str) -> int:
         return int(value) + 1
 
-    value = d.pop("foo", "default", type=_my_type)
+    value = d.pop("foo", "default", type=type)
     assert_type(value, Union[int, str])
     assert value == 43
 
-    value = d.pop("bar", "default", type=_my_type)
+    value = d.pop("bar", "default", type=type)
     assert_type(value, Union[int, str])
+    assert value == "default"
+
+
+def test_pop_with_type_default_factory() -> None:
+    d = TypeConversionDict(foo="42")
+    df = lambda: "default"
+
+    value = d.pop("bar", default_factory=df, type=int)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+    def type(value: str) -> int:
+        return int(value) + 1
+
+    value = d.pop("foo", default_factory=df, type=type)
+    assert_type(value, Union[int, str])
+    assert value == 43
+
+    value = d.pop("bar", default_factory=df, type=type)
+    assert_type(value, Union[int, str])
+    assert value == "default"
 
 
 def test_pop_with_type_default_required() -> None:
@@ -139,7 +224,7 @@ def test_pop_with_type_default_required() -> None:
         _value = d.pop("bar", "default", type=int, required=True)
         assert_type(_value, int)
 
-    def _my_type(value: str) -> int:
+    def type(value: str) -> int:
         if value != "hello":
             raise ValueError("value must be 'hello'")
         return 42
@@ -148,20 +233,58 @@ def test_pop_with_type_default_required() -> None:
     assert "foo" not in d
 
     # foo is not in d
-    value = d.pop("foo", "default", type=_my_type, required=False)
+    value = d.pop("foo", "default", type=type, required=False)
     assert_type(value, Union[int, str])
     assert value == "default"
 
     d["foo"] = "42"  # reset the value
 
-    value = d.pop("foo", "default", type=_my_type, required=False)
+    value = d.pop("foo", "default", type=type, required=False)
     assert_type(value, Union[int, str])
     assert value == "default"
 
     d["foo"] = "42"  # reset the value
 
     with pytest.raises(ValueError):
-        _value = d.pop("foo", "default", type=_my_type, required=True)
+        _value = d.pop("foo", "default", type=type, required=True)
+        assert_type(_value, int)
+
+
+def test_pop_with_type_default_factory_required() -> None:
+    d = TypeConversionDict(foo="42")
+    df = lambda: "default"
+
+    value = d.pop("bar", default_factory=df, type=int, required=False)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+    with pytest.raises(KeyError):
+        _value = d.pop("bar", default_factory=df, type=int, required=True)
+        assert_type(_value, int)
+
+    def type(value: str) -> int:
+        if value != "hello":
+            raise ValueError("value must be 'hello'")
+        return 42
+
+    d.pop("foo")
+    assert "foo" not in d
+
+    # foo is not in d
+    value = d.pop("foo", default_factory=df, type=type, required=False)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+    d["foo"] = "42"  # reset the value
+
+    value = d.pop("foo", default_factory=df, type=type, required=False)
+    assert_type(value, Union[int, str])
+    assert value == "default"
+
+    d["foo"] = "42"  # reset the value
+
+    with pytest.raises(ValueError):
+        _value = d.pop("foo", default_factory=df, type=type, required=True)
         assert_type(_value, int)
 
 
@@ -193,3 +316,27 @@ def test_pop_missing_with_type() -> None:
     d7: TypeConversionDict = TypeConversionDict()
     with pytest.raises(KeyError):
         _value = d7.pop("foo", type=int)
+
+
+def test_pop_with_default_and_default_factory() -> None:
+    d = TypeConversionDict(foo="42")
+
+    i = 0
+
+    def df() -> str:
+        """Default factory with side effect to make sure it runs correctly"""
+        nonlocal i
+        i += 1
+        return "default_factory"
+
+    # Both of these should get you being shouted at by the type checker, but they should work
+    _value = d.pop("foo", "default", default_factory=df, required=True)  # type: ignore
+    assert _value == "42"
+    assert "foo" not in d
+    assert i == 0
+
+    # Default factory should be ignored if default is provided
+    _value = d.pop("bar", "default", default_factory=df, required=False)  # type: ignore
+    assert _value == "default"
+    assert "bar" not in d
+    assert i == 0  # default factory should not run
