@@ -320,3 +320,20 @@ def test_get_with_default_and_default_factory() -> None:
     _value = d.get("bar", "default", default_factory=df, required=False)  # type: ignore
     assert _value == "default"
     assert i == 0  # default factory should not run
+
+
+def test_default_factory_classes() -> None:
+    d = TypeConversionDict(foo="42")
+
+    # Make sure we can instantiate basic types
+    value_2: list | str = d.get("bar", default_factory=list)
+    assert_type(value_2, list | str)
+    assert value_2 == []
+
+    # Make sure we can instantiate classes
+    class MyClass:
+        pass
+
+    value_3: MyClass | str = d.get("bar", default_factory=MyClass)
+    assert_type(value_3, MyClass | str)
+    assert isinstance(value_3, MyClass)
