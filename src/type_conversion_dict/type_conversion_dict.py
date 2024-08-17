@@ -125,7 +125,8 @@ class TypeConversionDict(dict[_K, _V]):
             be looked up. If not further specified `None` is returned.
             Mutually exclusive with `default_factory`.
         :param default_factory: A callable that returns the default value.
-        Mutually exclusive with `default`.
+            Useful for expensive default value generation.
+            Mutually exclusive with `default`.
         :param type: A callable that is used to cast the value. If a ValueError
             or is raised by this callable the default value is
             returned.
@@ -160,7 +161,7 @@ class TypeConversionDict(dict[_K, _V]):
                     else:
                         raise ValueError(f"Required key {key} is None")
             else:
-                # re have rv, no default value and a default_factory.
+                # we have rv, no default value and a default_factory.
                 # if we had the default value we'd want to check if rv is the default value
                 # and then optionally skip the type conversion. since the default_factory
                 # can be expensive, we just run the type conversion
@@ -207,6 +208,12 @@ class TypeConversionDict(dict[_K, _V]):
     def pop(self, key: _K, default: _D, *, required: Literal[False]) -> Union[_D, _V]: ...
     @overload
     def pop(self, key: _K, default: object, *, required: Literal[True]) -> _V: ...
+    @overload
+    def pop(self, key: _K, *, default_factory: Callable[[], _D]) -> Union[_D, _V]: ...
+    @overload
+    def pop(self, key: _K, *, default_factory: Callable[[], _D], required: Literal[False]) -> Union[_D, _V]: ...
+    @overload
+    def pop(self, key: _K, *, default_factory: object, required: Literal[True]) -> _V: ...
 
     # Get with type. No default therefore default is None
 
@@ -226,6 +233,14 @@ class TypeConversionDict(dict[_K, _V]):
     def pop(self, key: _K, default: _D, *, type: Callable[[_V], _T], required: Literal[False]) -> Union[_D, _T]: ...
     @overload
     def pop(self, key: _K, default: object, *, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
+    @overload
+    def pop(self, key: _K, *, default_factory: Callable[[], _D], type: Callable[[_V], _T]) -> Union[_D, _T]: ...
+    @overload
+    def pop(
+        self, key: _K, *, default_factory: Callable[[], _D], type: Callable[[_V], _T], required: Literal[False]
+    ) -> Union[_D, _T]: ...
+    @overload
+    def pop(self, key: _K, *, default_factory: object, type: Callable[[_V], _T], required: Literal[True]) -> _T: ...
 
     # Get with required. Default is ignored and the key is required. Equivalent to [] access
 
@@ -246,6 +261,7 @@ class TypeConversionDict(dict[_K, _V]):
         key,
         default=_missing,  # Default to None
         *,
+        default_factory=_missing,
         type=_missing,  # Default to no type conversion
         required=_missing,  # Default to mixed behaviour
     ):
@@ -263,11 +279,14 @@ class TypeConversionDict(dict[_K, _V]):
 
         :param key: The key to be looked up.
         :param default: The default value to be returned if the key is not
-                        in the dictionary. If not further specified it's
-                        an :exc:`KeyError`.
+            in the dictionary. If not further specified it's a KeyError
+            exception. Mutually exclusive with `default_factory`.
+        :param default_factory: A callable that returns the default value.
+            Useful for expensive default value generation.
+            Mutually exclusive with `default`.
         :param type: A callable that is used to cast the value in the dict.
-                        If a :exc:`ValueError` or a :exc:`TypeError` is raised
-                        by this callable the default value is returned.
+            If a ValueError is raised by this callable the default
+            value is returned.
         :param required: If set to `True` the key is required. If set to
                         `False` the default value is returned instead.
 
@@ -275,17 +294,24 @@ class TypeConversionDict(dict[_K, _V]):
 
            If the type conversion fails, the key is **not** removed from the
            dictionary.
-
         """
+
         __tracebackhide__ = True
         try:
             rv = self[key]
         except KeyError:
             if default is _missing:
-                # No default, therefore behave as if required is True by default
-                if required is _missing or required:
+                # No default, but lets check for default_factory
+                if default_factory is _missing:
+                    # No default or default_factory, therefore behave as if required is True by default
+                    if required is _missing or required:
+                        raise
+                    return None
+                else:
+                    # default_factory is provided, therefore behave as if required is False by default
+                    if required is _missing or not required:
+                        return default_factory()
                     raise
-                return None
             else:
                 # default is provided, therefore behave as if required is False by default
                 if required is _missing or not required:
@@ -295,13 +321,20 @@ class TypeConversionDict(dict[_K, _V]):
         # Check for rv already being the default value. If so, return it without type conversion
         _skip_type_conversion = False
         if default is _missing:
-            # No default, therefore behave as if required is True by default
-            if rv is None:
-                if required is _missing or required:
-                    raise ValueError(f"Required key {key} is None")
-                else:
-                    return None
+            # No default, but lets check for default_factory
+            if default_factory is _missing:
+                # No default or default_factory, therefore behave as if required is True by default
+                if rv is None:
+                    if required is _missing or required:
+                        raise ValueError(f"Required key {key} is None")
+                    else:
+                        return None
+            else:
+                # We have the rv, no default value and a default_factory.
+                # No skipping of type conversion here, as default_factory can be expensive
+                pass
         else:
+            # Maybe skip type conversion
             if rv is default or _type(rv) is _type(default) and rv == default:
                 _skip_type_conversion = True
 
@@ -310,10 +343,17 @@ class TypeConversionDict(dict[_K, _V]):
                 rv = type(rv)  # pyright: ignore[reportCallIssue]
             except ValueError:
                 if default is _missing:
-                    # No default, therefore behave as if required is True by default
-                    if required is _missing or required:
+                    # No default, but lets check for default_factory
+                    if default_factory is _missing:
+                        # No default, therefore behave as if required is True by default
+                        if required is _missing or required:
+                            raise
+                        return None
+                    else:
+                        # default_factory is provided, therefore behave as if required is False by default
+                        if required is _missing or not required:
+                            return default_factory()
                         raise
-                    return None
                 else:
                     # default is provided, therefore behave as if required is False by default
                     if required is _missing or not required:

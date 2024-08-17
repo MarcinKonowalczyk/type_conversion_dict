@@ -77,6 +77,12 @@ def test_normal_get_default_factory() -> None:
     assert value == "default"
     assert _i == 1
 
+    # Run again. The default factory should be called again. We do not cache the result
+    value = d.get("bar", default_factory=df)
+    assert_type(value, str)
+    assert value == "default"
+    assert _i == 2
+
 
 def test_normal_get_default_required() -> None:
     d = TypeConversionDict(foo="42")
@@ -294,12 +300,23 @@ def test_get_missing_with_type() -> None:
     assert d7.get("foo", type=int) is None
 
 
-def test_default_and_default_factory() -> None:
+def test_get_with_default_and_default_factory() -> None:
     d = TypeConversionDict(foo="42")
+
+    i = 0
+
+    def df() -> str:
+        """Default factory with side effect to make sure it runs correctly"""
+        nonlocal i
+        i += 1
+        return "default_factory"
+
     # Both of these should get you being shouted at by the type checker, but they should work
-    _value = d.get("foo", "default", default_factory=lambda: "default_factory", required=True)  # type: ignore
+    _value = d.get("foo", "default", default_factory=df, required=True)  # type: ignore
     assert _value == "42"
+    assert i == 0
 
     # Default factory should be ignored if default is provided
-    _value = d.get("bar", "default", default_factory=lambda: "default_factory", required=False)  # type: ignore
+    _value = d.get("bar", "default", default_factory=df, required=False)  # type: ignore
     assert _value == "default"
+    assert i == 0  # default factory should not run
