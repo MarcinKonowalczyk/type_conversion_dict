@@ -104,7 +104,7 @@ class TypeConversionDict(dict[_K, _V]):
         key,
         default=None,
         *,
-        default_factory=_missing,
+        default_factory=_missing,  # Default to no default_factory
         type=_missing,  # Default to no type conversion
         required=False,  # Default to False
     ):
