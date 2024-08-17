@@ -81,24 +81,22 @@ lint.ignore = [
     "PLR0912", # too many branches
     "PLR0913", # too many arguments in function definition
     "PLR2004", # magic values
-    # "SIM108",
     #
 ]
 lint.select = [
-    "E",   # pycodestyle
-    "F",   # Pyflakes
-    "B",   # flake8-bugbear
-    "SIM", # flake8-simplify
-    "W",   # warnings
-    "UP",  # pyupgrade
-    "I",   # isort
-    "Q",   # flake8-quotes
-    "RUF", # ruff
-    # "TID", # flake8-tidy-imports
+    "E",    # pycodestyle
+    "F",    # Pyflakes
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "W",    # warnings
+    "UP",   # pyupgrade
+    "I",    # isort
+    "Q",    # flake8-quotes
+    "RUF",  # ruff
+    "TID",  # flake8-tidy-imports
     "PERF", # perflint
     "FURB", # refurb
     "PL",   # pylint
-    "NPY",  # numpy
     #
 ]
 
