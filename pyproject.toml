@@ -114,3 +114,11 @@ addopts = [
     # "--doctest-modules",
     #
 ]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+    "ruff>=0.11.2",
+]
