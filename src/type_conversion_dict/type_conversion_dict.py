@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     # import like this not to acquire a dependency on typing_extensions
     from typing_extensions import override
 else:
-    override = lambda f: f
+    override = lambda f: f  # noqa: E731
 
 _K = TypeVar("_K")  # key
 _V = TypeVar("_V")  # value
@@ -170,7 +170,7 @@ class TypeConversionDict(dict[_K, _V]):
                 pass
         else:  # noqa: PLR5501
             # we have a default value. check if rv is the default value
-            if rv is default or _type(rv) is _type(default) and rv == default:
+            if rv is default or (_type(rv) is _type(default) and rv == default):
                 return rv
 
         # Type conversion
@@ -339,7 +339,7 @@ class TypeConversionDict(dict[_K, _V]):
                 pass
         else:  # noqa: PLR5501
             # Maybe skip type conversion
-            if rv is default or _type(rv) is _type(default) and rv == default:
+            if rv is default or (_type(rv) is _type(default) and rv == default):
                 _skip_type_conversion = True
 
         if type is not _missing and not _skip_type_conversion:

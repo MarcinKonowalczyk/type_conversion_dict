@@ -46,7 +46,7 @@ warn_return_any = true
 show_error_codes = true
 warn_unused_ignores = true
 warn_unused_configs = true
-explicit_package_bases = true
+explicit_package_bases = false
 enable_error_code = "explicit-override"
 extra_checks = true
 local_partial_types = true
@@ -75,7 +75,6 @@ exclude = [
 ]
 line-length = 120
 lint.ignore = [
-    "E731",
     "SIM105",
     "PLR0911", # too many return statements
     "PLR0912", # too many branches

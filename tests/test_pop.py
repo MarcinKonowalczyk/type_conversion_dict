@@ -7,7 +7,7 @@ from type_conversion_dict import TypeConversionDict
 if TYPE_CHECKING:
     from typing_extensions import assert_type
 else:
-    assert_type = lambda x, y: None
+    assert_type = lambda x, y: None  # noqa: E731
 
 
 def test_normal_pop() -> None:
@@ -112,7 +112,7 @@ def test_normal_pop_default_required() -> None:
 
 def test_normal_pop_default_factory_required() -> None:
     d = TypeConversionDict(foo="42")
-    df = lambda: "default"
+    df = lambda: "default"  # noqa: E731
     value = d.pop("foo", default_factory=df, required=True)
     assert value == "42"
 
@@ -196,7 +196,7 @@ def test_pop_with_type_default() -> None:
 
 def test_pop_with_type_default_factory() -> None:
     d = TypeConversionDict(foo="42")
-    df = lambda: "default"
+    df = lambda: "default"  # noqa: E731
 
     value = d.pop("bar", default_factory=df, type=int)
     assert_type(value, Union[int, str])
@@ -253,7 +253,7 @@ def test_pop_with_type_default_required() -> None:
 
 def test_pop_with_type_default_factory_required() -> None:
     d = TypeConversionDict(foo="42")
-    df = lambda: "default"
+    df = lambda: "default"  # noqa: E731
 
     value = d.pop("bar", default_factory=df, type=int, required=False)
     assert_type(value, Union[int, str])
