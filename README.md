@@ -1,8 +1,10 @@
 # type_conversion_dict
 
+![GitHub Tag](https://img.shields.io/github/v/tag/MarcinKonowalczyk/type_conversion_dict?label=version)
 [![Single file](https://img.shields.io/badge/single%20file%20-%20purple)](https://raw.githubusercontent.com/MarcinKonowalczyk/type_conversion_dict/main/src/type_conversion_dict/type_conversion_dict.py)
 [![test](https://github.com/MarcinKonowalczyk/type_conversion_dict/actions/workflows/test.yml/badge.svg)](https://github.com/MarcinKonowalczyk/type_conversion_dict/actions/workflows/test.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 ![Python versions](https://img.shields.io/badge/python-3.9%20~%203.13-blue)
